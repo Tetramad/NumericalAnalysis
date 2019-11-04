@@ -1,5 +1,6 @@
 import scipy as sp
 import scipy.linalg as linalg
+from timeit import timeit
 
 
 def LUDecomposition(matrix: sp.ndarray, dtype=float):
@@ -71,31 +72,61 @@ def CholeskyDecomposition(matrix: sp.ndarray, dtype=float):
     return L
 
 
+def LDLTDecomposition(matrix: sp.ndarray, dtype=float):
+    L, U = LUDecomposition(matrix, dtype)
+
+    return L, sp.diag(sp.diag(U))
+
+
 def AssertLU(matrix: sp.ndarray, msg=''):
     print(msg)
+    P, L, U = linalg.lu(matrix)
+    if sp.allclose(matrix, P@L@U, rtol=0):
+        print('PASS: linalg.lu')
+        print(
+            f'time: {timeit(lambda: linalg.lu(matrix), number=1000) * 1000: 3.0f}ms')
+    else:
+        print('FAIL: linalg.lu')
 
     L, U = LUDecomposition(matrix)
     if sp.allclose(matrix, L@U, rtol=0):
         print('PASS: LU decomposition')
+        print(
+            f'time: {timeit(lambda: LUDecomposition(matrix), number=1000) * 1000: 3.0f}ms')
     else:
         print('FAIL: LU decomposition')
 
     P, L, U = LUPPDecomposition(matrix)
     if sp.allclose(matrix, P@L@U, rtol=0):
         print('PASS: LUPP decomposition')
+        print(
+            f'time: {timeit(lambda: LUPPDecomposition(matrix), number=1000) * 1000: 3.0f}ms')
     else:
         print('FAIL: LUPP decomposition')
 
     P, L, U, Q = LUCPDecomposition(matrix)
     if sp.allclose(matrix, P@L@U@Q, rtol=0):
         print('PASS: LUCP decomposition')
+        print(
+            f'time: {timeit(lambda: LUCPDecomposition(matrix), number=1000) * 1000: 3.0f}ms')
     else:
         print('FAIL: LUCP decomposition')
 
-    if (matrix.shape[0] == matrix.shape[1]):
+    # Symmetric matrix only
+    if matrix.shape[0] == matrix.shape[1] and sp.allclose(matrix, sp.transpose(matrix), rtol=0):
+        L, D = LDLTDecomposition(matrix)
+        if sp.allclose(matrix, L@D@L.transpose(), rtol=0):
+            print('PASS: LDLT decomposition')
+            print(
+                f'time: {timeit(lambda: LDLTDecomposition(matrix), number=1000) * 1000: 3.0f}ms')
+        else:
+            print('FAIL: LDLT decomposition')
+
         L = CholeskyDecomposition(matrix)
         if sp.allclose(matrix, L@L.transpose(), rtol=0):
             print('PASS: Cholesky decomposition')
+            print(
+                f'time: {timeit(lambda: CholeskyDecomposition(matrix), number=1000) * 1000: 3.0f}ms')
         else:
             print('FAIL: Cholesky decomposition')
 
