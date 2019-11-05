@@ -3,6 +3,51 @@ import scipy.linalg as linalg
 from timeit import timeit
 
 
+def DoolittleLU(matrix: sp.ndarray, dtype=float):
+    n, m = matrix.shape
+    l = sp.zeros((n, n), dtype=dtype)
+    u = sp.zeros((n, m), dtype=dtype)
+
+    for i in range(n):
+        for k in range(i, m):
+            s = 0
+            for j in range(i):
+                s += l[i][j] * u[j][k]
+
+            u[i][k] = matrix[i][k] - s
+
+        l[i][i] = 1
+        for k in range(i+1, n):
+            s = 0
+            for j in range(i):
+                s += l[k][j] * u[j][i]
+            l[k][i] = (matrix[k][i] - s) / u[i][i]
+
+    return l, u
+
+
+def CroutLU(matrix: sp.ndarray, dtype=float):
+    n, m = matrix.shape
+    l = sp.zeros((n, m))
+    u = sp.zeros((m, m))
+
+    for j in range(m):
+        for i in range(j, n):
+            s = 0
+            for k in range(j):
+                s += l[i][k] * u[k][j]
+            l[i][j] = matrix[i][j] - s
+
+        u[j][j] = 1
+        for i in range(j+1, m):
+            s = 0
+            for k in range(j):
+                s += l[j][k] * u[k][i]
+            u[j][i] = (matrix[j][i] - s) / l[j][j]
+
+    return l, u
+
+
 def LUDecomposition(matrix: sp.ndarray, dtype=float):
     n, m = matrix.shape
     L = sp.identity(n, dtype)
@@ -88,6 +133,22 @@ def AssertLU(matrix: sp.ndarray, msg=''):
     else:
         print('FAIL: linalg.lu')
 
+    L, U = DoolittleLU(matrix)
+    if sp.allclose(matrix, L@U, rtol=0):
+        print('PASS: DoolittleLU')
+        print(
+            f'time: {timeit(lambda: DoolittleLU(matrix), number=1000) * 1000: 3.0f}ms')
+    else:
+        print('FAIL: DoolittleLU')
+
+    L, U = CroutLU(matrix)
+    if sp.allclose(matrix, L@U, rtol=0):
+        print('PASS: CroutLU')
+        print(
+            f'time: {timeit(lambda: CroutLU(matrix), number=1000) * 1000: 3.0f}ms')
+    else:
+        print('FAIL: CroutLU')
+
     L, U = LUDecomposition(matrix)
     if sp.allclose(matrix, L@U, rtol=0):
         print('PASS: LU decomposition')
@@ -137,19 +198,19 @@ def main():
     A = sp.array([[1, 1, 1],
                   [1, 2, 4],
                   [1, 3, 9]])
-    AssertLU(A, 'Low rank Vandermonde matrix')
+    AssertLU(A, 'Low rank(3) Vandermonde matrix')
 
     A = sp.array([[-1]])
     AssertLU(A, 'Single element matrix')
 
     A = sp.array([[3, 2, 4],
                   [2, 4, 3]])
-    AssertLU(A, 'Non-square matrix')
+    AssertLU(A, 'Non-square(2, 3) matrix')
 
     A = sp.array([[2, 4],
                   [3, 3],
                   [4, 2]])
-    AssertLU(A, 'Non-square matrix')
+    AssertLU(A, 'Non-square(3, 2) matrix')
 
     A = sp.array([[1, -2, 0],
                   [-2, 1, -2],
@@ -175,12 +236,21 @@ def main():
     for i in range(A.shape[0]):
         for j in range(A.shape[1]):
             A[i][j] = (i+1)**j
-    AssertLU(A, 'High rank Vandermonde matrix')
+    AssertLU(A, 'High rank(16) Vandermonde matrix')
+    
+    A = sp.zeros((17, 17))
+    for i in range(A.shape[0]):
+        for j in range(A.shape[1]):
+            A[i][j] = (i+1)**j
+    AssertLU(A, 'High rank(17) Vandermode matrix')
 
     A = sp.array([[1, 1, 1],
                   [2, 2, 2],
                   [3, 3, 3]])
     AssertLU(A, 'Singular matrix')
+
+    A = sp.rand(50, 50)
+    AssertLU(A, 'Big(50, 50) matrix')
 
 
 if __name__ == '__main__':
