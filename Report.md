@@ -4,7 +4,7 @@
 | :-------------: | :---------: | :-----: |
 | scipy.linalg.lu | DoolittleLU | CroutLU |
 |       LU        |    LUPP     |  LUCP   |
-|      LULT       |  Cholesky   |         |
+|      LDLT       |  Cholesky   |         |
 
 ## 시간 분석
 ### 테스트 환경
@@ -21,7 +21,10 @@
 $
 \displaystyle \\
 \text{평균 실행 시간} = \frac{\text{1,000회 실행 시간}}{1,000}\ (\mu s) \\
-\text{PASS 조건:}\quad\forall (i,j),\quad \left|a_{i,j} - b_{i,j}\right| < 10^{-8} \\
+\text{PASS 조건:} \\
+A = \{a_{i,j}\} \\
+B = \{b_{i,j}\} = LU = PLU = PLUQ = LDL^T = LL^T \\
+\forall (i,j),\quad \left|a_{i,j} - b_{i,j}\right| < 10^{-8} \\
 $
 
 ### 테스트 결과
@@ -62,3 +65,19 @@ $
 |       LU        |                      FAIL |                      FAIL |     FAIL |
 |      LUPP       |                      FAIL |                      FAIL |     FAIL |
 |      LUCP       |                      FAIL |                      FAIL |     FAIL |
+
+### 결과 분석
+- naive LU가 기본적으로 가장 빠르다.
+- scipy.linalg의 lu는 singular 행렬도 LU 분해에 성공한다.
+- 행렬이 커지면 scipy.linalg의 lu는 다른 구현보다 빠르다.
+  - scipy의 LU 분해는 Sivan Toledo's recursive LU의 iterative 구현을 사용한 것으로 추측된다. (M, N) 행렬을 Partial Pivoting을 적용하여 LU 분해를 한다. LAPACK라이브러리의 일부로 포트란으로 구현되어있다.
+
+|||
+|:-:|:-:|
+|![scipy_source](주석&#32;2019-11-05&#32;202728.png)|![lapack_doc](주석&#32;2019-11-05&#32;202840.png)|
+
+- 큰 행렬에서 naive LU 보다 doolittle, crout LU가 조금 더 빠른 것으로 나타난다.
+  - 왜 더 빠른지 모르겠다.
+- non-square 행렬에서는 doolittle과 crout의 구조적 차이로 행이 적을 때는 doolittle이, 열이 적을 때는 crout가 빠르다
+- 놀랍게도 doolittle LU와 crout LU는 16 rank의 방데르몽드 행렬 테스트를 통과했다.
+- 행렬이 positive definite 행렬이면 Cholesky 분해가 naive LU만큼 빠르다. 정확성에 대해서는 큰 positive definite 행렬을 구하지 못해서 테스트 하지 못했다.

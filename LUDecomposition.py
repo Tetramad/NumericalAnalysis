@@ -237,7 +237,7 @@ def main():
         for j in range(A.shape[1]):
             A[i][j] = (i+1)**j
     AssertLU(A, 'High rank(16) Vandermonde matrix')
-    
+
     A = sp.zeros((17, 17))
     for i in range(A.shape[0]):
         for j in range(A.shape[1]):
